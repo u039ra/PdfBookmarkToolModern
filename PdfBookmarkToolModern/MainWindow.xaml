@@ -102,7 +102,7 @@
                     </StackPanel>
                     
                     <!-- 検索・フィルタセクション -->
-                    <Expander Header="🔍 検索・フィルタ" IsExpanded="True" Margin="0,5,0,0">
+                    <Expander Header="🔍 検索・フィルタ" IsExpanded="False" Margin="0,5,0,0">
                         <StackPanel Margin="10,5,0,0">
                             <!-- 検索テキスト -->
                             <Grid Margin="0,0,0,5">
@@ -122,7 +122,10 @@
                                        Style="{StaticResource AnimatedButtonStyle}"
                                        Background="{StaticResource AccentBrush}"
                                        ToolTip="フィルタをクリア"
-                                       Width="25" Height="25"/>
+                                       Width="30" Height="30"
+                                       FontSize="14"
+                                       Padding="0"
+                                       Margin="0,0,0,0"/>
                             </Grid>
                             
                             <!-- レベルフィルタ -->
