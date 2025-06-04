@@ -32,7 +32,14 @@ namespace PdfBookmarkToolModern.Services
                 }
 
                 string json = File.ReadAllText(SettingsFilePath);
-                var settings = JsonSerializer.Deserialize<AppSettings>(json);
+                
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+                
+                var settings = JsonSerializer.Deserialize<AppSettings>(json, options);
                 
                 if (settings == null)
                 {
@@ -55,6 +62,12 @@ namespace PdfBookmarkToolModern.Services
         /// </summary>
         public static bool SaveSettings(AppSettings settings)
         {
+            if (settings == null)
+            {
+                Logger.Warn("保存する設定がnullです");
+                return false;
+            }
+
             try
             {
                 // ディレクトリが存在しない場合は作成
@@ -89,8 +102,28 @@ namespace PdfBookmarkToolModern.Services
         {
             var settings = new AppSettings();
             
-            // 初回起動時にデフォルト設定を保存
-            SaveSettings(settings);
+            // 初回起動時にデフォルト設定を保存（バックグラウンドで実行）
+            try
+            {
+                if (!Directory.Exists(SettingsDirectory))
+                {
+                    Directory.CreateDirectory(SettingsDirectory);
+                }
+                
+                var options = new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+
+                string json = JsonSerializer.Serialize(settings, options);
+                File.WriteAllText(SettingsFilePath, json);
+                Logger.Info("デフォルト設定ファイルを作成しました");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "デフォルト設定ファイル作成中にエラーが発生しました");
+            }
             
             return settings;
         }
@@ -134,7 +167,17 @@ namespace PdfBookmarkToolModern.Services
                 if (!File.Exists(SettingsFilePath))
                     return false;
 
-                string backupPath = SettingsFilePath + $".backup.{DateTime.Now:yyyyMMddHHmmss}";
+                string baseBackupPath = SettingsFilePath + $".backup.{DateTime.Now:yyyyMMddHHmmss}";
+                string backupPath = baseBackupPath;
+                int counter = 1;
+                
+                // ファイル名が重複する場合は連番を追加
+                while (File.Exists(backupPath))
+                {
+                    backupPath = $"{baseBackupPath}_{counter:D3}";
+                    counter++;
+                }
+                
                 File.Copy(SettingsFilePath, backupPath);
                 
                 Logger.Info($"設定のバックアップを作成しました: {backupPath}");

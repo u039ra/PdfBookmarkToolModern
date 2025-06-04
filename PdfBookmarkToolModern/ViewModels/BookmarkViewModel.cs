@@ -24,10 +24,18 @@ namespace PdfBookmarkToolModern.ViewModels
         public BookmarkViewModel()
         {
             Children = new ObservableCollection<BookmarkViewModel>();
+            Level = 1;
+            Title = "新しいブックマーク";
+            LinkPage = "1";
+            ActionType = "GoTo";
+            DisplayOption = "XYZ";
         }
 
         public BookmarkViewModel(BookmarkEntry entry) : this()
         {
+            if (entry == null)
+                throw new ArgumentNullException(nameof(entry));
+
             Level = entry.Level;
             Title = entry.Title;
             LinkPage = entry.LinkPage;
@@ -146,6 +154,8 @@ namespace PdfBookmarkToolModern.ViewModels
             get
             {
                 var details = new List<string>();
+                if (!string.IsNullOrEmpty(Title))
+                    details.Add($"タイトル: {Title}");
                 if (!string.IsNullOrEmpty(ActionType))
                     details.Add($"アクション: {ActionType}");
                 if (!string.IsNullOrEmpty(LinkFile))
