@@ -76,20 +76,29 @@
             </Grid.ColumnDefinitions>
 
             <!-- 左側パネル: ブックマーク階層表示 -->
-            <Grid Grid.Column="0">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+            <Border Grid.Column="0" Style="{StaticResource AnimatedCardStyle}">
+                <Grid Style="{StaticResource FadeInStyle}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
                 <!-- ブックマーク操作ボタンと検索・フィルタ -->
                 <StackPanel Grid.Row="0" Margin="0,0,0,10">
                     <!-- 操作ボタン -->
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                        <Button Content="追加" Command="{Binding AddBookmarkCommand}" ToolTip="新しいブックマークを追加"/>
-                        <Button Content="削除" Command="{Binding DeleteBookmarkCommand}" ToolTip="選択したブックマークを削除"/>
-                        <Button Content="適用" Command="{Binding ApplyChangesCommand}" ToolTip="変更を適用"/>
+                        <Button Content="➕ 追加" Command="{Binding AddBookmarkCommand}" 
+                                Style="{StaticResource AnimatedButtonStyle}"
+                                Background="{StaticResource SecondaryBrush}"
+                                ToolTip="新しいブックマークを追加"/>
+                        <Button Content="🗑️ 削除" Command="{Binding DeleteBookmarkCommand}" 
+                                Style="{StaticResource AnimatedButtonStyle}"
+                                Background="{StaticResource AccentBrush}"
+                                ToolTip="選択したブックマークを削除"/>
+                        <Button Content="✅ 適用" Command="{Binding ApplyChangesCommand}" 
+                                Style="{StaticResource AnimatedButtonStyle}"
+                                ToolTip="変更を適用"/>
                     </StackPanel>
                     
                     <!-- 検索・フィルタセクション -->
@@ -105,10 +114,13 @@
                                 <TextBlock Grid.Column="0" Text="検索:" VerticalAlignment="Center" Margin="0,0,5,0"/>
                                 <TextBox Grid.Column="1" 
                                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" 
+                                        Style="{StaticResource AnimatedTextBoxStyle}"
                                         ToolTip="ブックマークのタイトルで検索"
                                         Margin="0,0,5,0"/>
                                 <Button Grid.Column="2" Content="✕" 
                                        Command="{Binding ClearFiltersCommand}"
+                                       Style="{StaticResource AnimatedButtonStyle}"
+                                       Background="{StaticResource AccentBrush}"
                                        ToolTip="フィルタをクリア"
                                        Width="25" Height="25"/>
                             </Grid>
@@ -154,7 +166,7 @@
                          Drop="TreeView_Drop"
                          DragOver="TreeView_DragOver">
                     <TreeView.ItemContainerStyle>
-                        <Style TargetType="TreeViewItem">
+                        <Style TargetType="TreeViewItem" BasedOn="{StaticResource AnimatedTreeViewItemStyle}">
                             <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
                             <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
                             <EventSetter Event="PreviewMouseRightButtonDown" Handler="TreeViewItem_PreviewMouseRightButtonDown"/>
@@ -162,12 +174,13 @@
                     </TreeView.ItemContainerStyle>
                 </TreeView>
 
-                <!-- 統計情報 -->
-                <TextBlock Grid.Row="2" 
-                          Text="{Binding Bookmarks.Count, StringFormat='ブックマーク数: {0}'}"
-                          Margin="0,5,0,0"
-                          HorizontalAlignment="Right"/>
-            </Grid>
+                    <!-- 統計情報 -->
+                    <TextBlock Grid.Row="2" 
+                              Text="{Binding Bookmarks.Count, StringFormat='ブックマーク数: {0}'}"
+                              Margin="0,5,0,0"
+                              HorizontalAlignment="Right"/>
+                </Grid>
+            </Border>
 
             <!-- スプリッター -->
             <GridSplitter Grid.Column="1" 
@@ -175,11 +188,12 @@
                          HorizontalAlignment="Stretch"/>
 
             <!-- 右側パネル: ブックマーク詳細編集 -->
-            <Grid Grid.Column="2" DataContext="{Binding SelectedBookmark}" Margin="10,0,0,0">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
+            <Border Grid.Column="2" Style="{StaticResource AnimatedCardStyle}" Margin="10,0,0,0">
+                <Grid DataContext="{Binding SelectedBookmark}" Style="{StaticResource FadeInStyle}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
 
                 <!-- ヘッダー -->
                 <TextBlock Grid.Row="0" 
@@ -195,11 +209,13 @@
                         <!-- タイトル -->
                         <Label Content="タイトル:"/>
                         <TextBox Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}" 
+                                Style="{StaticResource AnimatedTextBoxStyle}"
                                 AcceptsReturn="False"/>
 
                         <!-- レベル -->
                         <Label Content="レベル:"/>
                         <TextBox Text="{Binding Level, UpdateSourceTrigger=PropertyChanged}"
+                                Style="{StaticResource AnimatedTextBoxStyle}"
                                 IsReadOnly="True"
                                 Background="LightGray"/>
 
@@ -212,11 +228,13 @@
                         <Label Content="リンク先ファイル:"
                               Visibility="{Binding ActionType, Converter={StaticResource GoToRVisibilityConverter}}"/>
                         <TextBox Text="{Binding LinkFile, UpdateSourceTrigger=PropertyChanged}"
+                                Style="{StaticResource AnimatedTextBoxStyle}"
                                 Visibility="{Binding ActionType, Converter={StaticResource GoToRVisibilityConverter}}"/>
 
                         <!-- ページ番号 -->
                         <Label Content="ページ番号:"/>
-                        <TextBox Text="{Binding LinkPage, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBox Text="{Binding LinkPage, UpdateSourceTrigger=PropertyChanged}"
+                                Style="{StaticResource AnimatedTextBoxStyle}"/>
 
                         <!-- 表示オプション -->
                         <Label Content="表示オプション:"/>
@@ -227,12 +245,14 @@
                         <Label Content="X座標:"
                               Visibility="{Binding DisplayOption, Converter={StaticResource ActionTypeToVisibilityConverter}, ConverterParameter=XYZ}"/>
                         <TextBox Text="{Binding XCoord, UpdateSourceTrigger=PropertyChanged}"
+                                Style="{StaticResource AnimatedTextBoxStyle}"
                                 Visibility="{Binding DisplayOption, Converter={StaticResource ActionTypeToVisibilityConverter}, ConverterParameter=XYZ}"/>
 
                         <!-- Y座標 (XYZの場合のみ表示) -->
                         <Label Content="Y座標:"
                               Visibility="{Binding DisplayOption, Converter={StaticResource ActionTypeToVisibilityConverter}, ConverterParameter=XYZ}"/>
                         <TextBox Text="{Binding YCoord, UpdateSourceTrigger=PropertyChanged}"
+                                Style="{StaticResource AnimatedTextBoxStyle}"
                                 Visibility="{Binding DisplayOption, Converter={StaticResource ActionTypeToVisibilityConverter}, ConverterParameter=XYZ}"/>
 
                         <!-- プレビュー -->
@@ -245,7 +265,8 @@
                         </Border>
                     </StackPanel>
                 </ScrollViewer>
-            </Grid>
+                </Grid>
+            </Border>
         </Grid>
 
         <!-- ステータスバー -->
@@ -255,11 +276,12 @@
             </StatusBarItem>
             <StatusBarItem HorizontalAlignment="Right">
                 <StackPanel Orientation="Horizontal">
-                    <ProgressBar Width="100" Height="16" 
-                                IsIndeterminate="{Binding IsProcessing}"
-                                Visibility="{Binding IsProcessing, Converter={x:Static converters:BooleanToVisibilityConverter.Instance}}"/>
+                    <Border Style="{StaticResource LoadingSpinnerStyle}"
+                            Width="20" Height="20"
+                            Visibility="{Binding IsProcessing, Converter={x:Static converters:BooleanToVisibilityConverter.Instance}}"/>
                     <TextBlock Text="処理中..." 
-                              Margin="5,0,0,0"
+                              Margin="8,0,0,0"
+                              FontWeight="Medium"
                               Visibility="{Binding IsProcessing, Converter={x:Static converters:BooleanToVisibilityConverter.Instance}}"/>
                 </StackPanel>
             </StatusBarItem>

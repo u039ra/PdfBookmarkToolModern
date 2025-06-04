@@ -46,6 +46,303 @@
                 <Setter Property="BorderThickness" Value="1"/>
                 <Setter Property="BorderBrush" Value="LightGray"/>
             </Style>
+            
+            <!-- アニメーション時間の定数 -->
+            <Duration x:Key="FastAnimation">0:0:0.2</Duration>
+            <Duration x:Key="MediumAnimation">0:0:0.4</Duration>
+            <Duration x:Key="SlowAnimation">0:0:0.6</Duration>
+            
+            <!-- イージング関数 -->
+            <QuadraticEase x:Key="EaseOut" EasingMode="EaseOut"/>
+            <CubicEase x:Key="EaseInOut" EasingMode="EaseInOut"/>
+            <BounceEase x:Key="BounceOut" EasingMode="EaseOut" Bounces="2" Bounciness="0.3"/>
+            
+            <!-- カラーリソース -->
+            <SolidColorBrush x:Key="PrimaryBrush" Color="#3498db"/>
+            <SolidColorBrush x:Key="SecondaryBrush" Color="#2ecc71"/>
+            <SolidColorBrush x:Key="AccentBrush" Color="#e74c3c"/>
+            <SolidColorBrush x:Key="HoverBrush" Color="#5dade2"/>
+            <SolidColorBrush x:Key="PressedBrush" Color="#2980b9"/>
+            
+            <!-- アニメーション付きボタンスタイル -->
+            <Style x:Key="AnimatedButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Padding" Value="12,8"/>
+                <Setter Property="Margin" Value="4"/>
+                <Setter Property="FontWeight" Value="Medium"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="border" 
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="4"
+                                    RenderTransformOrigin="0.5,0.5">
+                                <Border.RenderTransform>
+                                    <ScaleTransform x:Name="scaleTransform" ScaleX="1" ScaleY="1"/>
+                                </Border.RenderTransform>
+                                <ContentPresenter x:Name="contentPresenter"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Margin="{TemplateBinding Padding}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation To="#5dade2" Duration="{StaticResource FastAnimation}"
+                                                              Storyboard.TargetName="border"
+                                                              Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                              EasingFunction="{StaticResource EaseOut}"/>
+                                                <DoubleAnimation To="1.05" Duration="{StaticResource FastAnimation}"
+                                                               Storyboard.TargetName="scaleTransform"
+                                                               Storyboard.TargetProperty="ScaleX"
+                                                               EasingFunction="{StaticResource EaseOut}"/>
+                                                <DoubleAnimation To="1.05" Duration="{StaticResource FastAnimation}"
+                                                               Storyboard.TargetName="scaleTransform"
+                                                               Storyboard.TargetProperty="ScaleY"
+                                                               EasingFunction="{StaticResource EaseOut}"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.EnterActions>
+                                    <Trigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation To="#3498db" Duration="{StaticResource FastAnimation}"
+                                                              Storyboard.TargetName="border"
+                                                              Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                              EasingFunction="{StaticResource EaseOut}"/>
+                                                <DoubleAnimation To="1.0" Duration="{StaticResource FastAnimation}"
+                                                               Storyboard.TargetName="scaleTransform"
+                                                               Storyboard.TargetProperty="ScaleX"
+                                                               EasingFunction="{StaticResource EaseOut}"/>
+                                                <DoubleAnimation To="1.0" Duration="{StaticResource FastAnimation}"
+                                                               Storyboard.TargetName="scaleTransform"
+                                                               Storyboard.TargetProperty="ScaleY"
+                                                               EasingFunction="{StaticResource EaseOut}"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.ExitActions>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation To="0.95" Duration="0:0:0.1"
+                                                               Storyboard.TargetName="scaleTransform"
+                                                               Storyboard.TargetProperty="ScaleX"/>
+                                                <DoubleAnimation To="0.95" Duration="0:0:0.1"
+                                                               Storyboard.TargetName="scaleTransform"
+                                                               Storyboard.TargetProperty="ScaleY"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.EnterActions>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            
+            <!-- アニメーション付きTextBoxスタイル -->
+            <Style x:Key="AnimatedTextBoxStyle" TargetType="TextBox">
+                <Setter Property="BorderBrush" Value="#bdc3c7"/>
+                <Setter Property="BorderThickness" Value="2"/>
+                <Setter Property="Padding" Value="8,6"/>
+                <Setter Property="Margin" Value="4"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="TextBox">
+                            <Border x:Name="border"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    Background="{TemplateBinding Background}"
+                                    CornerRadius="4">
+                                <ScrollViewer x:Name="PART_ContentHost"
+                                            Margin="{TemplateBinding Padding}"
+                                            VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsFocused" Value="True">
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation To="#3498db" Duration="{StaticResource FastAnimation}"
+                                                              Storyboard.TargetName="border"
+                                                              Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                                              EasingFunction="{StaticResource EaseOut}"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.EnterActions>
+                                    <Trigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation To="#bdc3c7" Duration="{StaticResource FastAnimation}"
+                                                              Storyboard.TargetName="border"
+                                                              Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                                              EasingFunction="{StaticResource EaseOut}"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.ExitActions>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            
+            <!-- アニメーション付きTreeViewItemスタイル -->
+            <Style x:Key="AnimatedTreeViewItemStyle" TargetType="TreeViewItem">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="TreeViewItem">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                
+                                <Border x:Name="Bd" Grid.Column="1" Grid.Row="0"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        Padding="{TemplateBinding Padding}"
+                                        CornerRadius="3"
+                                        Margin="2,1">
+                                    <Border.RenderTransform>
+                                        <TranslateTransform x:Name="translateTransform" X="0"/>
+                                    </Border.RenderTransform>
+                                    <ContentPresenter x:Name="PART_Header"
+                                                    ContentSource="Header"
+                                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                                </Border>
+                                
+                                <ToggleButton x:Name="Expander" Grid.Column="0" Grid.Row="0"
+                                            Style="{x:Null}"
+                                            IsChecked="{Binding Path=IsExpanded, RelativeSource={RelativeSource TemplatedParent}}"
+                                            ClickMode="Press"
+                                            Width="16" Height="16"
+                                            Margin="4,0"
+                                            Background="Transparent"
+                                            BorderThickness="0">
+                                    <Path x:Name="ExpandPath"
+                                          Fill="#7f8c8d"
+                                          Stroke="#7f8c8d"
+                                          StrokeThickness="1"
+                                          Data="M 4,0 L 8,4 L 4,8 Z"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center">
+                                        <Path.RenderTransform>
+                                            <RotateTransform x:Name="expandRotateTransform" Angle="0" CenterX="4" CenterY="4"/>
+                                        </Path.RenderTransform>
+                                    </Path>
+                                </ToggleButton>
+                                
+                                <ItemsPresenter x:Name="ItemsHost" Grid.Column="1" Grid.Row="1"
+                                              Margin="12,0,0,0">
+                                    <ItemsPresenter.RenderTransform>
+                                        <ScaleTransform x:Name="itemsScaleTransform" ScaleY="0"/>
+                                    </ItemsPresenter.RenderTransform>
+                                </ItemsPresenter>
+                            </Grid>
+                            
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsExpanded" Value="False">
+                                    <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed"/>
+                                </Trigger>
+                                <Trigger Property="IsExpanded" Value="True">
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation To="90" Duration="{StaticResource FastAnimation}"
+                                                           Storyboard.TargetName="expandRotateTransform"
+                                                           Storyboard.TargetProperty="Angle"
+                                                           EasingFunction="{StaticResource EaseOut}"/>
+                                                <DoubleAnimation To="1" Duration="{StaticResource MediumAnimation}"
+                                                               Storyboard.TargetName="itemsScaleTransform"
+                                                               Storyboard.TargetProperty="ScaleY"
+                                                               EasingFunction="{StaticResource EaseInOut}"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.EnterActions>
+                                    <Trigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation To="0" Duration="{StaticResource FastAnimation}"
+                                                               Storyboard.TargetName="expandRotateTransform"
+                                                               Storyboard.TargetProperty="Angle"
+                                                               EasingFunction="{StaticResource EaseOut}"/>
+                                                <DoubleAnimation To="0" Duration="{StaticResource FastAnimation}"
+                                                               Storyboard.TargetName="itemsScaleTransform"
+                                                               Storyboard.TargetProperty="ScaleY"
+                                                               EasingFunction="{StaticResource EaseOut}"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.ExitActions>
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#e8f4fd"/>
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation From="-20" To="0" Duration="{StaticResource MediumAnimation}"
+                                                               Storyboard.TargetName="translateTransform"
+                                                               Storyboard.TargetProperty="X"
+                                                               EasingFunction="{StaticResource BounceOut}"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.EnterActions>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#f8f9fa"/>
+                                </Trigger>
+                                <Trigger Property="HasItems" Value="False">
+                                    <Setter TargetName="Expander" Property="Visibility" Value="Hidden"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            
+            <!-- ローディングアニメーション -->
+            <Style x:Key="LoadingSpinnerStyle" TargetType="Border">
+                <Setter Property="Width" Value="20"/>
+                <Setter Property="Height" Value="20"/>
+                <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+                <Setter Property="BorderThickness" Value="3"/>
+                <Setter Property="CornerRadius" Value="10"/>
+            </Style>
+            
+            <!-- フェードインアニメーション -->
+            <Style x:Key="FadeInStyle" TargetType="FrameworkElement">
+                <Setter Property="Opacity" Value="1"/>
+            </Style>
+            
+            <!-- カードスタイル（ホバーアニメーション付き） -->
+            <Style x:Key="AnimatedCardStyle" TargetType="Border">
+                <Setter Property="Background" Value="White"/>
+                <Setter Property="BorderBrush" Value="#ecf0f1"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="8"/>
+                <Setter Property="Padding" Value="16"/>
+                <Setter Property="Margin" Value="8"/>
+                <Setter Property="Effect">
+                    <Setter.Value>
+                        <DropShadowEffect Color="#95a5a6" BlurRadius="5" Opacity="0.2" ShadowDepth="2"/>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application> 
