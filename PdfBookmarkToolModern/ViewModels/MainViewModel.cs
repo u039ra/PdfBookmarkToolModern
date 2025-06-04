@@ -257,18 +257,73 @@ namespace PdfBookmarkToolModern.ViewModels
             var newBookmark = new BookmarkViewModel
             {
                 Title = "新しいブックマーク",
-                Level = 1,
                 ActionType = Constants.PDF_ACTION_GOTO,
                 LinkPage = "1",
                 DisplayOption = Constants.PDF_ACTION_XYZ
             };
 
-            _allBookmarks.Add(newBookmark);
+            if (SelectedBookmark != null)
+            {
+                // 選択中のしおりと同じレベルに追加
+                newBookmark.Level = SelectedBookmark.Level;
+                var parent = GetParentBookmark(SelectedBookmark);
+                if (parent != null)
+                {
+                    // 親がある場合は親の子として追加
+                    var index = parent.Children.IndexOf(SelectedBookmark);
+                    parent.Children.Insert(index + 1, newBookmark);
+                }
+                else
+                {
+                    // 親がない場合はルートレベルに追加
+                    var index = _allBookmarks.IndexOf(SelectedBookmark);
+                    _allBookmarks.Insert(index + 1, newBookmark);
+                }
+            }
+            else
+            {
+                // 選択なしの場合はルートレベルに追加
+                newBookmark.Level = 1;
+                _allBookmarks.Add(newBookmark);
+            }
+
             ApplyFilters(); // フィルタを再適用
             SelectedBookmark = newBookmark;
             StatusMessage = "新しいブックマークを追加しました";
             OnPropertyChanged(nameof(HasBookmarks));
             RefreshCommands();
+        }
+
+        /// <summary>
+        /// 指定されたブックマークの親を取得
+        /// </summary>
+        private BookmarkViewModel? GetParentBookmark(BookmarkViewModel bookmark)
+        {
+            // ルートレベルから検索
+            foreach (var rootBookmark in _allBookmarks)
+            {
+                var parent = FindParentRecursive(rootBookmark, bookmark);
+                if (parent != null)
+                    return parent;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 再帰的に親を検索
+        /// </summary>
+        private BookmarkViewModel? FindParentRecursive(BookmarkViewModel parent, BookmarkViewModel target)
+        {
+            foreach (var child in parent.Children)
+            {
+                if (child == target)
+                    return parent;
+                
+                var found = FindParentRecursive(child, target);
+                if (found != null)
+                    return found;
+            }
+            return null;
         }
 
         private void DeleteBookmark()

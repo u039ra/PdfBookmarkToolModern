@@ -57,7 +57,7 @@ namespace PdfBookmarkToolModern
         public static readonly string[] SUPPORTED_EXCEL_EXTENSIONS = { ".xlsx", ".xls" };
         
         // アプリケーション情報
-        public const string APP_NAME = "PDFブックマークツール Modern";
+        public const string APP_NAME = "PDFしおり簡易編集ツール";
         public const string APP_VERSION = "2.0.0";
         public const string APP_DESCRIPTION = ".NET 9.0 + PDFsharp 6.2.0版";
     }

@@ -154,25 +154,35 @@
                     </Expander>
                 </StackPanel>
 
-                <!-- ブックマーク階層表示TreeView -->
-                <TreeView Grid.Row="1" 
-                         Name="BookmarkTreeView"
-                         ItemsSource="{Binding Bookmarks}"
-                         ItemTemplate="{StaticResource BookmarkTemplate}"
-                         SelectedItemChanged="BookmarkTreeView_SelectedItemChanged"
-                         AllowDrop="True"
-                         PreviewMouseLeftButtonDown="TreeView_PreviewMouseLeftButtonDown"
-                         MouseMove="TreeView_MouseMove"
-                         Drop="TreeView_Drop"
-                         DragOver="TreeView_DragOver">
-                    <TreeView.ItemContainerStyle>
-                        <Style TargetType="TreeViewItem" BasedOn="{StaticResource AnimatedTreeViewItemStyle}">
-                            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
-                            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
-                            <EventSetter Event="PreviewMouseRightButtonDown" Handler="TreeViewItem_PreviewMouseRightButtonDown"/>
-                        </Style>
-                    </TreeView.ItemContainerStyle>
-                </TreeView>
+                <!-- ブックマークツリービュー -->
+                <Grid Grid.Row="1">
+                    <TreeView x:Name="BookmarkTreeView" 
+                        ItemsSource="{Binding Bookmarks}"
+                        SelectedItemChanged="BookmarkTreeView_SelectedItemChanged"
+                        AllowDrop="True"
+                        PreviewMouseDown="TreeView_PreviewMouseDown"
+                        PreviewMouseMove="TreeView_PreviewMouseMove"
+                        DragOver="TreeView_DragOver"
+                        Drop="TreeView_Drop"
+                        PreviewMouseRightButtonDown="TreeViewItem_PreviewMouseRightButtonDown"
+                        DragLeave="TreeView_DragLeave">
+                        <TreeView.ItemTemplate>
+                            <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Title}" Margin="2"/>
+                                </StackPanel>
+                            </HierarchicalDataTemplate>
+                        </TreeView.ItemTemplate>
+                        <TreeView.ItemContainerStyle>
+                            <Style TargetType="TreeViewItem" BasedOn="{StaticResource AnimatedTreeViewItemStyle}">
+                                <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
+                                <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
+                                <EventSetter Event="PreviewMouseRightButtonDown" Handler="TreeViewItem_PreviewMouseRightButtonDown"/>
+                            </Style>
+                        </TreeView.ItemContainerStyle>
+                    </TreeView>
+                    <Canvas x:Name="DropIndicatorCanvas" Panel.ZIndex="1"/>
+                </Grid>
 
                     <!-- 統計情報 -->
                     <TextBlock Grid.Row="2" 
