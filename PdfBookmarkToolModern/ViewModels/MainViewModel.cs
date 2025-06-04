@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Input;
 using NLog;
 using PdfBookmarkToolModern.Commands;
+using PdfBookmarkToolModern.Models;
 using PdfBookmarkToolModern.Services;
 using ClosedXML.Excel;
 using WpfOpenFileDialog = Microsoft.Win32.OpenFileDialog;
@@ -31,10 +32,32 @@ namespace PdfBookmarkToolModern.ViewModels
         private bool _isProcessing;
         private string _statusMessage = "準備完了";
         private string? _currentPdfPath;
+        
+        // 検索・フィルタ機能
+        private string _searchText = "";
+        private int _selectedLevel = 0; // 0 = すべてのレベル
+        private string _selectedActionType = "すべて";
+        private ObservableCollection<BookmarkViewModel> _filteredBookmarks;
+        private ObservableCollection<BookmarkViewModel> _allBookmarks;
+        
+        // アプリケーション設定
+        private AppSettings _appSettings;
+        
+        // アンドゥ/リドゥ機能
+        private CommandHistory _commandHistory;
 
         public MainViewModel()
         {
-            _bookmarks = new ObservableCollection<BookmarkViewModel>();
+            _allBookmarks = new ObservableCollection<BookmarkViewModel>();
+            _filteredBookmarks = new ObservableCollection<BookmarkViewModel>();
+            _bookmarks = _filteredBookmarks;
+            
+            // 設定を読み込み
+            _appSettings = SettingsService.LoadSettings();
+            
+            // コマンド履歴を初期化
+            _commandHistory = new CommandHistory();
+            
             InitializeCommands();
         }
 
@@ -105,6 +128,81 @@ namespace PdfBookmarkToolModern.ViewModels
         /// </summary>
         public bool HasSelectedBookmark => SelectedBookmark != null;
 
+        /// <summary>
+        /// 検索テキスト
+        /// </summary>
+        public string SearchText
+        {
+            get => _searchText;
+            set
+            {
+                if (SetProperty(ref _searchText, value))
+                {
+                    ApplyFilters();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 選択されたレベルフィルタ
+        /// </summary>
+        public int SelectedLevel
+        {
+            get => _selectedLevel;
+            set
+            {
+                if (SetProperty(ref _selectedLevel, value))
+                {
+                    ApplyFilters();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 選択されたアクションタイプフィルタ
+        /// </summary>
+        public string SelectedActionType
+        {
+            get => _selectedActionType;
+            set
+            {
+                if (SetProperty(ref _selectedActionType, value))
+                {
+                    ApplyFilters();
+                }
+            }
+        }
+
+        /// <summary>
+        /// レベルフィルタの選択肢
+        /// </summary>
+        public int[] LevelFilterOptions => new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+
+        /// <summary>
+        /// アクションタイプフィルタの選択肢
+        /// </summary>
+        public string[] ActionTypeFilterOptions => new[] { "すべて" }.Concat(Constants.ACTION_TYPES).ToArray();
+
+        /// <summary>
+        /// アンドゥ可能かどうか
+        /// </summary>
+        public bool CanUndo => _commandHistory.CanUndo;
+
+        /// <summary>
+        /// リドゥ可能かどうか
+        /// </summary>
+        public bool CanRedo => _commandHistory.CanRedo;
+
+        /// <summary>
+        /// 次にアンドゥされる操作の説明
+        /// </summary>
+        public string? NextUndoDescription => _commandHistory.NextUndoDescription;
+
+        /// <summary>
+        /// 次にリドゥされる操作の説明
+        /// </summary>
+        public string? NextRedoDescription => _commandHistory.NextRedoDescription;
+
         #endregion
 
         #region Commands
@@ -118,6 +216,10 @@ namespace PdfBookmarkToolModern.ViewModels
         public ICommand LoadFromExcelCommand { get; private set; } = null!;
         public ICommand WriteToPdfCommand { get; private set; } = null!;
         public ICommand WriteToBatchPdfCommand { get; private set; } = null!;
+        public ICommand ClearFiltersCommand { get; private set; } = null!;
+        public ICommand ShowSettingsCommand { get; private set; } = null!;
+        public ICommand UndoCommand { get; private set; } = null!;
+        public ICommand RedoCommand { get; private set; } = null!;
 
         #endregion
 
@@ -134,6 +236,20 @@ namespace PdfBookmarkToolModern.ViewModels
             LoadFromExcelCommand = new RelayCommand(async () => await LoadFromExcelAsync());
             WriteToPdfCommand = new RelayCommand(async () => await WriteToPdfAsync(), () => HasBookmarks && !string.IsNullOrEmpty(_currentPdfPath));
             WriteToBatchPdfCommand = new RelayCommand(async () => await WriteToBatchPdfAsync(), () => HasBookmarks);
+            ClearFiltersCommand = new RelayCommand(ClearFilters);
+            ShowSettingsCommand = new RelayCommand(ShowSettings);
+            UndoCommand = new RelayCommand(() => ExecuteUndo(), () => CanUndo);
+            RedoCommand = new RelayCommand(() => ExecuteRedo(), () => CanRedo);
+            
+            // コマンド履歴の変更通知を購読
+            _commandHistory.PropertyChanged += (s, e) => 
+            {
+                OnPropertyChanged(nameof(CanUndo));
+                OnPropertyChanged(nameof(CanRedo));
+                OnPropertyChanged(nameof(NextUndoDescription));
+                OnPropertyChanged(nameof(NextRedoDescription));
+                RefreshCommands();
+            };
         }
 
         private void AddBookmark()
@@ -147,9 +263,12 @@ namespace PdfBookmarkToolModern.ViewModels
                 DisplayOption = Constants.PDF_ACTION_XYZ
             };
 
-            Bookmarks.Add(newBookmark);
+            _allBookmarks.Add(newBookmark);
+            ApplyFilters(); // フィルタを再適用
             SelectedBookmark = newBookmark;
             StatusMessage = "新しいブックマークを追加しました";
+            OnPropertyChanged(nameof(HasBookmarks));
+            RefreshCommands();
         }
 
         private void DeleteBookmark()
@@ -165,7 +284,8 @@ namespace PdfBookmarkToolModern.ViewModels
 
             if (result == System.Windows.MessageBoxResult.Yes)
             {
-                RemoveBookmarkFromCollection(SelectedBookmark, Bookmarks);
+                RemoveBookmarkFromCollection(SelectedBookmark, _allBookmarks);
+                ApplyFilters(); // フィルタを再適用
                 SelectedBookmark = null;
                 OnPropertyChanged(nameof(HasBookmarks));
                 OnPropertyChanged(nameof(HasSelectedBookmark));
@@ -223,15 +343,19 @@ namespace PdfBookmarkToolModern.ViewModels
                     
                     WpfApplication.Current.Dispatcher.Invoke(() =>
                     {
-                        Bookmarks.Clear();
+                        _allBookmarks.Clear();
+                        _filteredBookmarks.Clear();
+                        
                         foreach (var bookmark in bookmarkTree)
                         {
-                            Bookmarks.Add(new BookmarkViewModel(bookmark));
+                            var viewModel = new BookmarkViewModel(bookmark);
+                            _allBookmarks.Add(viewModel);
+                            _filteredBookmarks.Add(viewModel);
                         }
                         
                         _currentPdfPath = pdfPath;
                         WindowTitle = $"{Constants.APP_NAME} - {Path.GetFileName(pdfPath)}";
-                        StatusMessage = $"{Bookmarks.Count}個のブックマークを読み込みました";
+                        StatusMessage = $"{_allBookmarks.Count}個のブックマークを読み込みました";
                         
                         OnPropertyChanged(nameof(HasBookmarks));
                         RefreshCommands();
@@ -367,14 +491,18 @@ namespace PdfBookmarkToolModern.ViewModels
                         
                         WpfApplication.Current.Dispatcher.Invoke(() =>
                         {
-                            Bookmarks.Clear();
+                            _allBookmarks.Clear();
+                            _filteredBookmarks.Clear();
+                            
                             foreach (var bookmark in bookmarkTree)
                             {
-                                Bookmarks.Add(new BookmarkViewModel(bookmark));
+                                var viewModel = new BookmarkViewModel(bookmark);
+                                _allBookmarks.Add(viewModel);
+                                _filteredBookmarks.Add(viewModel);
                             }
                             
                             WindowTitle = $"{Constants.APP_NAME} - {Path.GetFileName(openFileDialog.FileName)}";
-                            StatusMessage = $"{Bookmarks.Count}個のブックマークを読み込みました";
+                            StatusMessage = $"{_allBookmarks.Count}個のブックマークを読み込みました";
                             
                             OnPropertyChanged(nameof(HasBookmarks));
                             RefreshCommands();
@@ -536,6 +664,170 @@ namespace PdfBookmarkToolModern.ViewModels
             if (SaveToExcelCommand is RelayCommand saveCmd) saveCmd.RaiseCanExecuteChanged();
             if (WriteToPdfCommand is RelayCommand writeCmd) writeCmd.RaiseCanExecuteChanged();
             if (WriteToBatchPdfCommand is RelayCommand batchCmd) batchCmd.RaiseCanExecuteChanged();
+            if (UndoCommand is RelayCommand undoCmd) undoCmd.RaiseCanExecuteChanged();
+            if (RedoCommand is RelayCommand redoCmd) redoCmd.RaiseCanExecuteChanged();
+        }
+
+        /// <summary>
+        /// 検索・フィルタを適用
+        /// </summary>
+        private void ApplyFilters()
+        {
+            _filteredBookmarks.Clear();
+            
+            var filteredItems = _allBookmarks.AsEnumerable();
+            
+            // テキスト検索
+            if (!string.IsNullOrWhiteSpace(SearchText))
+            {
+                string searchLower = SearchText.ToLower();
+                filteredItems = filteredItems.Where(b => ContainsInHierarchy(b, searchLower));
+            }
+            
+            // レベルフィルタ
+            if (SelectedLevel > 0)
+            {
+                filteredItems = filteredItems.Where(b => b.Level == SelectedLevel);
+            }
+            
+            // アクションタイプフィルタ
+            if (SelectedActionType != "すべて")
+            {
+                filteredItems = filteredItems.Where(b => b.ActionType == SelectedActionType);
+            }
+            
+            foreach (var item in filteredItems)
+            {
+                _filteredBookmarks.Add(item);
+            }
+            
+            OnPropertyChanged(nameof(HasBookmarks));
+        }
+        
+        /// <summary>
+        /// 階層構造内で検索テキストが含まれているかチェック
+        /// </summary>
+        private bool ContainsInHierarchy(BookmarkViewModel bookmark, string searchText)
+        {
+            // 自身のタイトルをチェック
+            if (bookmark.Title?.ToLower().Contains(searchText) == true)
+                return true;
+            
+            // 子要素を再帰的にチェック
+            return bookmark.Children.Any(child => ContainsInHierarchy(child, searchText));
+        }
+        
+        /// <summary>
+        /// フィルタをクリア
+        /// </summary>
+        private void ClearFilters()
+        {
+            SearchText = "";
+            SelectedLevel = 0;
+            SelectedActionType = "すべて";
+            StatusMessage = "フィルタをクリアしました";
+        }
+
+        /// <summary>
+        /// 設定画面を表示
+        /// </summary>
+        private void ShowSettings()
+        {
+            try
+            {
+                var window = WpfApplication.Current.MainWindow;
+                bool settingsSaved = Views.SettingsWindow.ShowSettingsDialog(window, _appSettings);
+
+                if (settingsSaved)
+                {
+                    StatusMessage = "設定を保存しました";
+                    // 設定変更の反映（テーマ適用など）
+                    ApplyAppSettings();
+                }
+                else
+                {
+                    StatusMessage = "設定の変更をキャンセルしました";
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "設定画面の表示中にエラーが発生しました");
+                StatusMessage = "設定画面の表示に失敗しました";
+            }
+        }
+
+        /// <summary>
+        /// アプリケーション設定を適用
+        /// </summary>
+        private void ApplyAppSettings()
+        {
+            try
+            {
+                // テーマの適用
+                if (_appSettings.CurrentTheme != Theme.Auto)
+                {
+                    // テーマ適用のロジック（今後実装）
+                    Logger.Info($"テーマを適用しました: {_appSettings.CurrentTheme}");
+                }
+
+                // その他の設定反映
+                Logger.Info("アプリケーション設定を適用しました");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "設定の適用中にエラーが発生しました");
+            }
+        }
+
+        /// <summary>
+        /// アンドゥを実行
+        /// </summary>
+        private void ExecuteUndo()
+        {
+            try
+            {
+                _commandHistory.Undo();
+                StatusMessage = $"操作を取り消しました: {_commandHistory.NextRedoDescription}";
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "アンドゥの実行中にエラーが発生しました");
+                StatusMessage = "アンドゥの実行に失敗しました";
+            }
+        }
+
+        /// <summary>
+        /// リドゥを実行
+        /// </summary>
+        private void ExecuteRedo()
+        {
+            try
+            {
+                _commandHistory.Redo();
+                StatusMessage = $"操作をやり直しました: {_commandHistory.NextUndoDescription}";
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "リドゥの実行中にエラーが発生しました");
+                StatusMessage = "リドゥの実行に失敗しました";
+            }
+        }
+
+        /// <summary>
+        /// アンドゥ可能なコマンドを実行
+        /// </summary>
+        private void ExecuteUndoableCommand(IUndoableCommand command)
+        {
+            try
+            {
+                _commandHistory.ExecuteCommand(command);
+                StatusMessage = $"実行しました: {command.Description}";
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"コマンドの実行中にエラーが発生しました: {command.Description}");
+                StatusMessage = $"操作に失敗しました: {command.Description}";
+            }
         }
 
         #endregion
